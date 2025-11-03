@@ -1,1 +1,170 @@
+#for task-01 ----I've used input.txt and output.txt file
+#for task-02 ----I've used input2.txt and outpu2.txt
+
+from google.colab import files
+uploaded = files.upload()
+
+____________________________________You can Use it in different shell separtely__________________________________
+
+import heapq
+
+directions = [(-1, 0, 'Up'), (1, 0, 'Down'), (0, -1, 'Left'), (0, 1, 'Right')]
+
+#Manhdist
+def heuristic(x1, y1, x2, y2):
+    return abs(x1 - x2) + abs(y1 - y2)
+
+# A*
+def a_star(maze, start, goal, n, m):
+    d = [[float('inf')] * m for _ in range(n)]
+    start_x, start_y = start
+    gx, gy = goal
+
+    pq = []
+    heapq.heappush(pq, (heuristic(start_x, start_y, gx, gy), 0, start_x, start_y, []))
+    d[start_x][start_y] = 0
+
+    while pq:
+        f, g, x, y, path = heapq.heappop(pq)
+
+        if (x, y) == (gx, gy):
+            print(f"Total steps: {g}")
+            print('Path:', ' → '.join(path))
+            return
+
+        if g > d[x][y]:
+            continue
+
+        for dx, dy, move in directions:
+            nx, ny = x + dx, y + dy
+            if 0 <= nx < n and 0 <= ny < m and maze[nx][ny] == '0':
+                new_g = g + 1
+                if new_g < d[nx][ny]:
+                    d[nx][ny] = new_g
+                    h = heuristic(nx, ny, gx, gy)
+                    heapq.heappush(pq, (new_g + h, new_g, nx, ny, path + [move]))
+
+    print("No path found.")
+
+
+def process_input_file(filename):
+    from io import StringIO
+    import sys
+
+    output = StringIO()
+    original_stdout = sys.stdout
+    sys.stdout = output  # Redirect output to capture prints
+
+    with open(filename, 'r') as f:
+        lines = [line.strip() for line in f if line.strip()]
+
+    idx = 0
+    while idx < len(lines):
+        n, m = map(int, lines[idx].replace(',', ' ').split())
+        idx += 1
+
+        maze = []
+        for _ in range(n):
+            row = lines[idx].replace(' ', '')
+            maze.append(list(row))
+            idx += 1
+
+        while not lines[idx].lower().startswith('start'):
+            idx += 1
+        start = tuple(map(int, lines[idx].split('(')[1].split(')')[0].split(',')))
+        idx += 1
+
+        goal = tuple(map(int, lines[idx].split('(')[1].split(')')[0].split(',')))
+        idx += 1
+
+        print(f"Maze size: {n}x{m}")
+        print(f"Start: {start}")
+        print(f"Goal: {goal}")
+        a_star(maze, start, goal, n, m)
+        print()
+
+        while idx < len(lines) and not any(c.isdigit() for c in lines[idx].split()[0]):
+            idx += 1
+
+    sys.stdout = original_stdout  # Restore normal print
+
+    with open("output.txt", "w") as f:
+        f.write(output.getvalue())
+
+# === Cell 4: Run and Download output.txt ===
+process_input_file('input.txt')
+
+from google.colab import files
+files.download('output.txt')
+
+
+
+
+#TAsk 02
+from collections import deque
+
+def bfs(graph, start, goal, n):
+    visited = [False] * (n + 1)
+    d = [float('inf')] * (n + 1)
+    queue = deque()
+
+    queue.append(start)
+    visited[start] = True
+    d[start] = 0
+
+    while queue:
+        node = queue.popleft()
+        for neighbor in graph[node]:
+            if not visited[neighbor]:
+                visited[neighbor] = True
+                d[neighbor] = d[node] + 1
+                queue.append(neighbor)
+
+    return d[goal]
+
+def is_admissible(n, m, a, b, heuristics, edges):
+    graph = [[] for _ in range(n + 1)]
+
+    for u, v in edges:
+        graph[u].append(v)
+        graph[v].append(u)
+
+    inadmissible_nodes = []
+
+    for node in range(1, n + 1):
+        true_cost = bfs(graph, node, b, n)
+        if heuristics[node] > true_cost:
+            inadmissible_nodes.append(node)
+
+    if not inadmissible_nodes:
+        return "The heuristic values are admissible."
+    else:
+        return "0\nHere nodes " + ', '.join(map(str, inadmissible_nodes)) + " are inadmissible.\n"
+
+
+# Read input from file
+with open('input2.txt', 'r') as f:
+    lines = f.read().strip().split('\n')
+
+n, m = map(int, lines[0].split())
+a, b = map(int, lines[1].split())
+
+heuristics = [0] * (n + 1)
+for i in range(n):
+    x, y = map(int, lines[2 + i].split())
+    heuristics[x] = y
+
+edges = []
+for i in range(m):
+    u, v = map(int, lines[2 + n + i].split())
+    edges.append((u, v))
+
+result = is_admissible(n, m, a, b, heuristics, edges)
+
+# Write output to file
+with open('output2.txt', 'w') as f:
+    f.write(result)
+
+
+
 
