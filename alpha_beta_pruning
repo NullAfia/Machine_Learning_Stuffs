@@ -1,0 +1,156 @@
+#_________________________________________________________________Task 01_____________________________________________________________________________
+#I've taken the input file as input.txt in both task 01 and 02
+def calc_utility(GN, target, weigth):
+    n = max(len(GN), len(target))
+    Utlty = 0
+    for d in range(n):
+        g_val = ord(GN[d]) if d < len(GN) else 0
+        t_val = ord(target[d]) if d < len(target) else 0
+        weight = weigth[d] if d < len(weigth) else 1
+        Utlty -= weight * abs(g_val - t_val)
+    return Utlty
+
+def minimax(pool, target, weigth, depth, is_maximizing, alpha, beta, GN_seq):
+    if depth == len(target) or not pool:
+        return calc_utility(GN_seq, target, weigth), GN_seq
+
+    best_GN = ""
+    if is_maximizing:
+        max_eval = float('-inf')
+        for i, Neucltide in enumerate(pool):
+            new_pool = pool[:i] + pool[i+1:]
+            eval_scr, new_GN = minimax(new_pool, target, weigth, depth+1, False, alpha, beta, GN_seq + Neucltide)
+            if eval_scr > max_eval:
+                max_eval = eval_scr
+                best_GN = new_GN
+            alpha = max(alpha, eval_scr)
+            if beta <= alpha:
+                break
+        return max_eval, best_GN
+    else:
+        min_eval = float('inf')
+        for i, Neucltide in enumerate(pool):
+            new_pool = pool[:i] + pool[i+1:]
+            eval_scr, new_GN = minimax(new_pool, target, weigth, depth+1, True, alpha, beta, GN_seq + Neucltide)
+            if eval_scr < min_eval:
+                min_eval = eval_scr
+                best_GN = new_GN
+            beta = min(beta, eval_scr)
+            if beta <= alpha:
+                break
+        return min_eval, best_GN
+
+def main():
+    with open("input.txt", "r") as f:
+        pool = f.readline().strip().split(",")
+        target = f.readline().strip()
+        sid_digits = list(map(int, f.readline().strip().split()))
+
+    weigth = sid_digits[-len(target):]
+
+    utility, GN = minimax(pool, target, weigth, 0, True, float('-inf'), float('inf'), "")
+
+    with open("output.txt", "w") as f:
+        f.write(f"Best GN sequence GNrated: {GN}\n")
+        f.write(f"Utility scr: {utility}\n")
+
+if __name__ == "__main__":
+    main()
+
+
+#_________________________________________________________________Task 02_____________________________________________________________________________
+
+import math
+import sys
+
+def calc_utility(GN, target, weigth, sid_prefix, sid):
+    base_total = 0
+    default_weight = 1
+
+    for i in range(len(GN)):
+        GN_char = GN[i]
+        target_char = target[i] if i < len(target) else 'A'
+
+        if i < len(weigth):
+            weight = weigth[i]
+        else:
+            weight = default_weight
+
+        diff = abs(ord(GN_char) - ord(target_char))
+        base_total += weight * diff
+
+    final_total = base_total
+
+    if 'S' in GN:
+        booster = sid_prefix / 100.0
+        sid_2_factor = sid[2] / 10.0
+        final_total = base_total * (1 - booster) + base_total * sid_2_factor
+
+    return -round(final_total, 2)
+
+
+def minimax(depth, max_depth, GN, is_maximizing, alpha, beta, pool, target, weigth, sid_prefix, sid):
+    if depth == max_depth:
+        return calc_utility(GN, target, weigth, sid_prefix, sid), GN
+
+    if is_maximizing:
+        max_eval = -math.inf
+        best_GN = ""
+        for Neucltide in pool:
+            eval_scr, child_GN = minimax(depth + 1, max_depth, GN + Neucltide, False, alpha, beta, pool, target, weigth, sid_prefix, sid)
+            if eval_scr > max_eval:
+                max_eval = eval_scr
+                best_GN = child_GN
+            alpha = max(alpha, eval_scr)
+            if beta <= alpha:
+                break
+        return max_eval, best_GN
+    else:
+        min_eval = math.inf
+        best_GN = ""
+        for Neucltide in pool:
+            eval_scr, child_GN = minimax(depth + 1, max_depth, GN + Neucltide, True, alpha, beta, pool, target, weigth, sid_prefix, sid)
+            if eval_scr < min_eval:
+                min_eval = eval_scr
+                best_GN = child_GN
+            beta = min(beta, eval_scr)
+            if beta <= alpha:
+                break
+        return min_eval, best_GN
+
+try:
+    with open('input.txt', 'r') as file:
+        lines = file.readlines()
+        if len(lines) < 3:
+            print("Error: input.txt must contain at least 3 lines.", file=sys.stderr)
+            exit()
+        pool = lines[0].strip().split(',')
+        target = lines[1].strip()
+        sid = list(map(int, lines[2].strip().split()))
+except FileNotFoundError:
+    print("Error: input.txt not found.", file=sys.stderr)
+    exit()
+except (ValueError, IndexError):
+    print("Error: Invalid format in input.txt.", file=sys.stderr)
+    exit()
+
+sid_prefix = int("".join(map(str, sid[:2])))
+max_depth = len(target) + 1
+weigth = sid[4:4 + max_depth]
+pool_without_s = [n for n in pool if n != 'S']
+if not pool_without_s:
+    pool_without_s = ['A']
+
+best_scr_no_s, best_GN_no_s = minimax(0, max_depth, '', True, -math.inf, math.inf, pool_without_s, target, weigth, sid_prefix, sid)
+
+pool_with_s = list(set(pool + ['S']))
+best_scr_with_s, best_GN_with_s = minimax(0, max_depth, '', True, -math.inf, math.inf, pool_with_s, target, weigth, sid_prefix, sid)
+
+if best_scr_with_s > best_scr_no_s:
+    print("YES")
+else:
+    print("NO")
+
+print("With special nucleotide")
+print(f"Best Gene sequence Generated: {best_GN_with_s}")
+print(f"Utility score: {best_scr_with_s}")
