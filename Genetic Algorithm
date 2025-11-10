@@ -16,7 +16,7 @@ CHIP_WIDTH, CHIP_HEIGHT = 25, 25
 alpha, beta, gamma = 1000, 2, 1
 
 
-# utility
+# utility function
 def is_overlap(ax, ay, aw, ah, bx, by, bw, bh):
     return not (ax + aw <= bx or ax >= bx + bw or ay + ah <= by or ay >= by + bh)
 
